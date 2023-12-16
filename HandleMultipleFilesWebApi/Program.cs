@@ -8,7 +8,8 @@ var builder = WebApplication.CreateBuilder(args);
 var minioConfig = builder.Configuration.GetSection("MinioConfig").Get<MinioConfigViewModel>();
 builder.Services.AddMinio(configureClient => configureClient
            .WithEndpoint(minioConfig.Endpoint)
-           .WithCredentials(minioConfig.AccessKey, minioConfig.SecretKey));
+           .WithCredentials(minioConfig.AccessKey, minioConfig.SecretKey)
+           .WithSSL(false));
 
 // Register MinioService
 builder.Services.AddScoped<IMinioService, MinioService>();

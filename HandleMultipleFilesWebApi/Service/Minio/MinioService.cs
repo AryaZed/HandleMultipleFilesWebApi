@@ -46,7 +46,7 @@ namespace HandleMultipleFilesWebApi.Service.Minio
             }
             catch (Exception ex)
             {
-
+                throw;
             }
         }
 
@@ -58,7 +58,6 @@ namespace HandleMultipleFilesWebApi.Service.Minio
             }
             catch (Exception)
             {
-
                 throw;
             }
         }

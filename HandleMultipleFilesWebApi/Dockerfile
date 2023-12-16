@@ -6,9 +6,9 @@ EXPOSE 80
 EXPOSE 443
 
 FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
-WORKDIR /src
-COPY ["HandleMultipleFilesWebApi/HandleMultipleFilesWebApi.csproj", "HandleMultipleFilesWebApi/"]
-RUN dotnet restore "HandleMultipleFilesWebApi/HandleMultipleFilesWebApi.csproj"
+WORKDIR /app
+COPY ["HandleMultipleFilesWebApi/HandleMultipleFilesWebApi.csproj", "./"]
+RUN dotnet restore "HandleMultipleFilesWebApi.csproj"
 COPY . .
 WORKDIR "/src/HandleMultipleFilesWebApi"
 RUN dotnet build "HandleMultipleFilesWebApi.csproj" -c Release -o /app/build
