@@ -61,7 +61,7 @@ namespace HandleMultipleFilesWebApi.Controllers
             var newZipPath = RepackageFilesIntoZip(localFilePaths);
             var downloadLink = await GenerateDownloadLinkWithExpiry(newZipPath, bucketName);
 
-            await ScheduleFileCleanup(newZipPath, bucketName, downloadLink.ExpiryTime);
+            //await ScheduleFileCleanup(newZipPath, bucketName, downloadLink.ExpiryTime);
 
             return downloadLink.Url;
         }
@@ -145,7 +145,7 @@ namespace HandleMultipleFilesWebApi.Controllers
         private async Task<(string Url, int ExpiryTime)> GenerateDownloadLinkWithExpiry(string newZipPath, string bucketName)
         {
             // Define an expiry time, for example, 24 hours from now
-            var expiryTime = TimeSpan.FromMinutes(15);
+            var expiryTime = TimeSpan.FromMinutes(1);
 
             var exp = (int)expiryTime.TotalSeconds;
 
