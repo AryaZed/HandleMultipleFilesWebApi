@@ -7,10 +7,9 @@ EXPOSE 443
 
 FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 WORKDIR /app
-COPY ["HandleMultipleFilesWebApi/HandleMultipleFilesWebApi.csproj", "./"]
+COPY ["HandleMultipleFilesWebApi.csproj", "./"]
 RUN dotnet restore "HandleMultipleFilesWebApi.csproj"
 COPY . .
-WORKDIR "/src/HandleMultipleFilesWebApi"
 RUN dotnet build "HandleMultipleFilesWebApi.csproj" -c Release -o /app/build
 
 FROM build AS publish
@@ -20,3 +19,5 @@ FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "HandleMultipleFilesWebApi.dll"]
+
+
