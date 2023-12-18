@@ -61,7 +61,8 @@ namespace HandleMultipleFilesWebApi.Controllers
             var localFilePaths = GetLocalFilePathsFromMinIO(filePath, bucketName);
             //UnzipFiles(localFilePaths, zipPassword); 
             var newZipPath = RepackageFilesIntoZip(localFilePaths);
-            var downloadLink = await GenerateDownloadLinkWithExpiry(newZipPath, bucketName);
+            var res = newZipPath.Substring(1);
+            var downloadLink = await GenerateDownloadLinkWithExpiry(res, bucketName);
 
             //await ScheduleFileCleanup(newZipPath, bucketName, downloadLink.ExpiryTime);
 
@@ -158,7 +159,11 @@ namespace HandleMultipleFilesWebApi.Controllers
 
             var exp = (int)expiryTime.TotalSeconds;
 
-            var url = await _minioService.GenerateDownloadLink(newZipPath, bucketName, exp);
+            var splitFile = newZipPath.Split('/');
+
+            var objectKey = splitFile[2] + "/" + splitFile[3];
+
+            var url = await _minioService.GenerateDownloadLink(objectKey, bucketName, exp);
             return (url, exp);
         }
 
