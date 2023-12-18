@@ -2,8 +2,14 @@ using HandleMultipleFilesWebApi.Models;
 using HandleMultipleFilesWebApi.Service.Minio;
 using Microsoft.Extensions.Configuration;
 using Minio;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog((ctx, lc) => lc
+    .WriteTo.Console()
+    .WriteTo.File("logs/myapp.txt", rollingInterval: RollingInterval.Day)
+);
 
 var minioConfig = builder.Configuration.GetSection("MinioConfig").Get<MinioConfigViewModel>();
 builder.Services.AddMinio(configureClient => configureClient

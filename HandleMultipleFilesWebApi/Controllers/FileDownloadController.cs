@@ -12,11 +12,13 @@ namespace HandleMultipleFilesWebApi.Controllers
     {
         private readonly IMinioService _minioService;
         private readonly IConfiguration _configuration;
+        private readonly ILogger<FileDownloadController> _logger;
 
-        public FileDownloadController(IMinioService minioService, IConfiguration configuration)
+        public FileDownloadController(IMinioService minioService, IConfiguration configuration, ILogger<FileDownloadController> logger)
         {
             _minioService = minioService;
             _configuration = configuration;
+            _logger = logger;
         }
 
         [HttpPost]
@@ -28,6 +30,7 @@ namespace HandleMultipleFilesWebApi.Controllers
                 // Validate the request
                 if (request.FileNames == null || !request.FileNames.Any())
                 {
+                    _logger.LogWarning("DownloadFiles request is invalid: FileNames are null or empty.");
                     return BadRequest("Invalid request.");
                 }
 
@@ -39,8 +42,7 @@ namespace HandleMultipleFilesWebApi.Controllers
             }
             catch (Exception ex)
             {
-                // Log the exception
-                // Return a generic error message
+                _logger.LogError(ex, "Error occurred while processing DownloadFiles request.");
                 return StatusCode(500, "An error occurred while processing your request.");
             }
         }
@@ -122,17 +124,24 @@ namespace HandleMultipleFilesWebApi.Controllers
             var basePath = string.Join("/", basePathSegments);
             var date = DateTime.UtcNow;
             // Append the desired directory or file name to the base path
-            string outputZipPath = Path.Combine(basePath, $"mergFile-{date.Hour}-{date.Minute}-{date.Second}.zip");
+            string outputZipPath = Path.Combine(basePath, $"mergeFile-{date.Hour}-{date.Minute}-{date.Second}.zip");
 
             var outputDirectory = Path.GetDirectoryName(outputZipPath);
-            if (!Directory.Exists(outputDirectory))
+            try
             {
-                Directory.CreateDirectory(outputDirectory);
+                if (!Directory.Exists(outputDirectory))
+                {
+                    Directory.CreateDirectory(outputDirectory);
+                }
+                var fileProcessingService = new FileProcessingService();
+                string zipPath = fileProcessingService.RepackageFilesIntoZip(unzippedFilePaths, outputZipPath);
+                return zipPath;
             }
-
-            var fileProcessingService = new FileProcessingService();
-            string zipPath = fileProcessingService.RepackageFilesIntoZip(unzippedFilePaths, outputZipPath);
-            return zipPath;
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating directory for zipped files.");
+                throw;
+            }            
         }
 
 
