@@ -1,6 +1,7 @@
 using HandleMultipleFilesWebApi.Models;
 using HandleMultipleFilesWebApi.Service.Minio;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Minio;
 using Serilog;
 
@@ -22,9 +23,7 @@ builder.Services.AddScoped<IMinioService, MinioService>();
 
 builder.Services.AddScoped<MinIOFileService>(serviceProvider =>
 {
-    var configuration = serviceProvider.GetService<IConfiguration>();
-    var yourConfigValue = configuration.GetValue<string>("MinioRootConfig");
-    return new MinIOFileService(yourConfigValue);
+    return new MinIOFileService(minioConfig.RootDirectory);
 });
 
 
