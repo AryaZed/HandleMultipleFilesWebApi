@@ -119,7 +119,7 @@ namespace HandleMultipleFilesWebApi.Controllers
             var pathSegments = firstFilePath.Split('/');
             // Assuming the base path always has a fixed number of segments
             // In this case, '/home/smart/minio/data/user-newaryadb-bucket' has 6 segments
-            const int basePathSegmentCount = 6;
+            const int basePathSegmentCount = 4;
             var basePathSegments = pathSegments.Take(basePathSegmentCount);
             var basePath = string.Join("/", basePathSegments);
             var date = DateTime.UtcNow;
