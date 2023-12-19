@@ -3,6 +3,9 @@ using HandleMultipleFilesWebApi.Service.Files;
 using HandleMultipleFilesWebApi.Service.Minio;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
+using Minio;
+using Minio.DataModel.Args;
+using System.IO.Compression;
 
 namespace HandleMultipleFilesWebApi.Controllers
 {
@@ -11,40 +14,92 @@ namespace HandleMultipleFilesWebApi.Controllers
     public class FileDownloadController : ControllerBase
     {
         private readonly IMinioService _minioService;
+        private readonly IMinioClient _minioClient;
         private readonly IConfiguration _configuration;
         private readonly ILogger<FileDownloadController> _logger;
 
-        public FileDownloadController(IMinioService minioService, IConfiguration configuration, ILogger<FileDownloadController> logger)
+        public FileDownloadController(IMinioService minioService, IConfiguration configuration, ILogger<FileDownloadController> logger, IMinioClient minioClient)
         {
             _minioService = minioService;
             _configuration = configuration;
             _logger = logger;
+            _minioClient = minioClient;
         }
 
         [HttpPost]
         [Route("download")]
         public async Task<IActionResult> DownloadFiles([FromBody] FileDownloadRequest request)
         {
+            if (request?.FileNames == null || !request.FileNames.Any())
+            {
+                return BadRequest("No file names provided.");
+            }
+
+            var datetime = DateTime.Now;
+            var zipFileName = $"output-{datetime:HH-mm-ss}.zip";
+            var bucketName = string.Empty;
+
             try
             {
-                // Validate the request
-                if (request.FileNames == null || !request.FileNames.Any())
+                using var zipMemoryStream = new MemoryStream();
+                using (var zip = new ZipArchive(zipMemoryStream, ZipArchiveMode.Create, true))
                 {
-                    _logger.LogWarning("DownloadFiles request is invalid: FileNames are null or empty.");
-                    return BadRequest("Invalid request.");
+                    foreach (var item in request.FileNames)
+                    {
+                        var urlSplit = item.Split("/");
+                        if (urlSplit.Length < 3)
+                        {
+                            _logger.LogWarning($"Invalid file path: {item}");
+                            continue;
+                        }
+
+                        bucketName = urlSplit[0];
+                        var objectKey = string.Join("/", urlSplit.Skip(1));
+                        var zipEntry = zip.CreateEntry(Path.GetFileName(objectKey));
+
+                        using var entryStream = zipEntry.Open();
+                        var getObjectArgs = new GetObjectArgs()
+                            .WithBucket(bucketName)
+                            .WithObject(objectKey)
+                            .WithCallbackStream(stream => stream.CopyTo(entryStream));
+                        await _minioClient.GetObjectAsync(getObjectArgs);
+                    }
                 }
 
-                // Logic to handle file download and zipping
-                string downloadUrl = await ProcessFilesAsync(request.FileNames);
+                if (zipMemoryStream.Length == 0)
+                {
+                    return NotFound("No files found to zip.");
+                }
 
-                // Return the download URL
-                return Ok(new { Url = downloadUrl });
+                await UploadZipToMinio(zipMemoryStream, bucketName, zipFileName);
+                var presignedUrl = await GeneratePresignedUrl(bucketName, zipFileName);
+                return Ok(new { Url = presignedUrl });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while processing DownloadFiles request.");
+                _logger.LogError(ex, "Error in DownloadFiles");
                 return StatusCode(500, "An error occurred while processing your request.");
             }
+        }
+
+        private async Task UploadZipToMinio(MemoryStream zipMemoryStream, string bucketName, string zipFileName)
+        {
+            zipMemoryStream.Position = 0;
+            var putObjectArgs = new PutObjectArgs()
+                .WithBucket(bucketName)
+                .WithObject(zipFileName)
+                .WithStreamData(zipMemoryStream)
+                .WithObjectSize(zipMemoryStream.Length);
+            await _minioClient.PutObjectAsync(putObjectArgs);
+        }
+
+        private async Task<string> GeneratePresignedUrl(string bucketName, string zipFileName)
+        {
+            var presignedGetObjectArgs = new PresignedGetObjectArgs()
+                .WithBucket(bucketName)
+                .WithObject(zipFileName)
+                .WithExpiry(60 * 15); // 15 minutes expiry
+            return await _minioClient.PresignedGetObjectAsync(presignedGetObjectArgs);
         }
 
         private async Task<string> ProcessFilesAsync(List<string> fileNames)
