@@ -1,6 +1,7 @@
 ﻿using Minio;
 using Minio.DataModel.Args;
 using Minio.DataModel;
+using Microsoft.AspNetCore.DataProtection;
 
 namespace HandleMultipleFilesWebApi.Service.Minio
 {
@@ -57,6 +58,45 @@ namespace HandleMultipleFilesWebApi.Service.Minio
                 return string.Empty;
             }
             catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        public async Task GetObjectAsync(GetObjectArgs args)
+        {
+            try
+            {
+                var res =  await minioClient.GetObjectAsync(args).ConfigureAwait(false);
+                var t = 1;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        public async Task<string> PresignedGetObjectAsync(PresignedGetObjectArgs presignedGetObjectArgs)
+        {
+            try
+            {
+                var res = await minioClient.PresignedGetObjectAsync(presignedGetObjectArgs).ConfigureAwait(false);
+                return res;
+            }
+            catch (Exception ex)
+            {
+
+                throw;
+            }
+        }
+
+        public async Task PutObjectAsync(PutObjectArgs putObjectArgs)
+        {
+            try
+            {
+                await minioClient.PutObjectAsync(putObjectArgs).ConfigureAwait(false);
+            }
+            catch (Exception ex)
             {
                 throw;
             }
