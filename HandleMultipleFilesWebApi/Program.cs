@@ -11,6 +11,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Minio;
 using Serilog;
+using System.Net;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,12 +20,22 @@ builder.Host.UseSerilog((ctx, lc) => lc
     .WriteTo.File("logs/myapp.txt", rollingInterval: RollingInterval.Day)
 );
 
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+    serverOptions.Listen(IPAddress.Any, 443, listenOptions =>
+    {
+        // Adjust the path and password as necessary
+        listenOptions.UseHttps("/certs/smartx.ir_2023_2.pfx", "1123");
+    });
+});
+
 builder.Services.AddCors(o => o.AddPolicy("CorsPolicy", builder =>
 {
     builder
     .AllowAnyHeader()
     .AllowAnyMethod()
     .SetIsOriginAllowed(_ => true)
+    .WithOrigins("https://backup.smartx.ir")
     .AllowCredentials();
 }));
 
