@@ -15,13 +15,14 @@ namespace HandleMultipleFilesWebApi.Controllers
         private readonly IMemoryCache _memoryCache;
         private readonly IBackgroundJobClient _backgroundJobClient;
         private readonly IProcessService _processService;
+        private readonly IHubContext<JobStatusHub> _hubContext;
 
-
-        public FileDownloadController(IMemoryCache memoryCache, IBackgroundJobClient backgroundJobClient, IProcessService processService)
+        public FileDownloadController(IMemoryCache memoryCache, IBackgroundJobClient backgroundJobClient, IProcessService processService, IHubContext<JobStatusHub> hubContext)
         {
             _memoryCache = memoryCache;
             _backgroundJobClient = backgroundJobClient;
             _processService = processService;
+            _hubContext = hubContext;
         }
 
         [HttpPost]
@@ -39,7 +40,7 @@ namespace HandleMultipleFilesWebApi.Controllers
                 // Start the asynchronous processing here (e.g., using a background worker or task queue)
 
                 _backgroundJobClient.Enqueue(() => _processService.ProcessFilesAsync(request.FileNames, jobId));
-
+           
                 //await _processService.ProcessFilesAsync(request.FileNames, jobId);
 
                 return Ok(new { JobId = jobId });
@@ -52,7 +53,7 @@ namespace HandleMultipleFilesWebApi.Controllers
 
         [HttpGet]
         [Route("checkStatus")]
-        public IActionResult CheckJobStatus(string jobId)
+        public async Task<IActionResult> CheckJobStatus(string jobId)
         {
             if (string.IsNullOrWhiteSpace(jobId))
             {
@@ -66,7 +67,8 @@ namespace HandleMultipleFilesWebApi.Controllers
 
             if (jobResult.Status == "Completed")
             {
-                return Ok(new { Url = jobResult.PresignedUrl });
+                await _hubContext.Clients.All.SendAsync("ReceiveJobStatus", jobId, new { Status = "Completed", Url = jobResult.PresignedUrl });
+                return Ok();
             }
 
             return Ok(new { Status = jobResult.Status }); // Or any other status message

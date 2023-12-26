@@ -91,10 +91,9 @@ app.UseHttpsRedirection();
 
 app.UseAuthorization();
 
+app.UseCors("CorsPolicy");
 // Map SignalR Hub
 app.MapHub<JobStatusHub>("/jobStatusHub");
-
-app.UseCors("CorsPolicy");
 
 app.MapControllers();
 
