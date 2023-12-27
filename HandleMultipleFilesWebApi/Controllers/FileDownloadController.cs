@@ -36,6 +36,8 @@ namespace HandleMultipleFilesWebApi.Controllers
                     return BadRequest("No file names provided.");
                 }
 
+                await Task.Delay(10000);
+
                 var jobId = Guid.NewGuid().ToString();
                 // Start the asynchronous processing here (e.g., using a background worker or task queue)
 

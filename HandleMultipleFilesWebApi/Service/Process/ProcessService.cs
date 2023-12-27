@@ -68,7 +68,7 @@ namespace HandleMultipleFilesWebApi.Service.Process
                 await UploadZipToMinio(zipMemoryStream, bucketName, zipFileName);
                 var presignedUrl = await GeneratePresignedUrl(bucketName, zipFileName);
 
-                //await _hubContext.Clients.All.SendAsync("ReceiveJobStatus", jobId, new { Status = "Completed", Url = presignedUrl });
+                await _hubContext.Clients.All.SendAsync("ReceiveJobStatus", jobId, new { Status = "Completed", Url = presignedUrl });
                 //// Save or send the presigned URL along with the job ID for later retrieval
                 //// This depends on how you track job statuses and results
                 SaveJobResult(jobId, presignedUrl);
@@ -82,6 +82,7 @@ namespace HandleMultipleFilesWebApi.Service.Process
                 // Handle error, update job status accordingly
             }
         }
+
         public void SaveJobResult(string jobId, string presignedUrl)
         {
             var jobResult = new JobResult
