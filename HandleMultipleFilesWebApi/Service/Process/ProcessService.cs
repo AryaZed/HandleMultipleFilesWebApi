@@ -72,7 +72,7 @@ namespace HandleMultipleFilesWebApi.Service.Process
                 //// Save or send the presigned URL along with the job ID for later retrieval
                 //// This depends on how you track job statuses and results
                 SaveJobResult(jobId, presignedUrl);
-                _logger.LogInformation($"Sent 'Completed' status with URL for job {jobId}");
+                _logger.LogInformation($"Sent 'Completed' status with URL for job {jobId} and URL : {presignedUrl}");
 
                 //var test = _memoryCache.TryGetValue<JobResult>(jobId, out var jobs);
             }
