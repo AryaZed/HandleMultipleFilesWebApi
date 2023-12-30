@@ -24,7 +24,7 @@ namespace HandleMultipleFilesWebApi.Service.Process
             _hubContext = hubContext;
         }
 
-        public async Task ProcessFilesAsync(List<string> fileNames, string jobId)
+        public async Task ProcessFilesAsync(List<string> fileNames,string jobId)
         {
             var datetime = DateTime.Now;
             var zipFileName = $"output-{datetime:HH-mm-ss}.zip";
@@ -32,7 +32,7 @@ namespace HandleMultipleFilesWebApi.Service.Process
 
             try
             {
-                SaveJob(jobId);
+                //SaveJob(jobId);
                 using var zipMemoryStream = new MemoryStream();
                 using (var zip = new ZipArchive(zipMemoryStream, ZipArchiveMode.Create, true))
                 {
@@ -68,10 +68,19 @@ namespace HandleMultipleFilesWebApi.Service.Process
                 await UploadZipToMinio(zipMemoryStream, bucketName, zipFileName);
                 var presignedUrl = await GeneratePresignedUrl(bucketName, zipFileName);
 
-                await _hubContext.Clients.All.SendAsync("ReceiveJobStatus", jobId, new { Status = "Completed", Url = presignedUrl });
+                //await _hubContext.Clients.All.SendAsync("ReceiveJobStatus", jobId, new { Status = "Completed", Url = presignedUrl });
                 //// Save or send the presigned URL along with the job ID for later retrieval
                 //// This depends on how you track job statuses and results
-                SaveJobResult(jobId, presignedUrl);
+                //SaveJobResult(presignedUrl, jobId);
+                var jobResult = new JobResult
+                {
+                    JobId = jobId,
+                    PresignedUrl = presignedUrl,
+                    Status = "Completed" // or "Failed" depending on the context
+                };
+
+                // Save the result in the cache with some expiration time
+                _memoryCache.Set(jobId, jobResult, TimeSpan.FromHours(1)); // Example: 1-hour expiration
                 _logger.LogInformation($"Sent 'Completed' status with URL for job {jobId} and URL : {presignedUrl}");
 
                 //var test = _memoryCache.TryGetValue<JobResult>(jobId, out var jobs);

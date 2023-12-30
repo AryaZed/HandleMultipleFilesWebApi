@@ -29,15 +29,28 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
     });
 });
 
-builder.Services.AddCors(o => o.AddPolicy("CorsPolicy", builder =>
+//builder.Services.AddCors(o => o.AddPolicy("CorsPolicy", builder =>
+//{
+//    builder
+//    .AllowAnyHeader()
+//    .AllowAnyMethod()
+//    .SetIsOriginAllowed(_ => true)
+//    .WithOrigins("https://backup.smartx.ir")
+//    .AllowCredentials();
+//}));
+
+builder.Services.AddCors(options =>
 {
-    builder
-    .AllowAnyHeader()
-    .AllowAnyMethod()
-    .SetIsOriginAllowed(_ => true)
-    .WithOrigins("https://backup.smartx.ir")
-    .AllowCredentials();
-}));
+    options.AddPolicy("AllowSpecificOrigins",
+        builder =>
+        {
+            builder.WithOrigins("https://backup.smartx.ir", "https://localhost:5001")
+                   .AllowAnyMethod()
+                   .AllowAnyHeader()
+                   .SetIsOriginAllowed(_ => true)
+                   .AllowCredentials();
+        });
+});
 
 builder.Services.AddSignalR();
 
@@ -68,6 +81,8 @@ builder.Services.AddHangfire(configuration => configuration
           .UseRecommendedSerializerSettings()
           .UseMemoryStorage());
 
+builder.Services.AddHangfireServer();
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -75,7 +90,7 @@ builder.Services.AddSwaggerGen();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment() && app.Environment.IsProduction())
+if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
@@ -85,13 +100,14 @@ if (app.Environment.IsDevelopment() && app.Environment.IsProduction())
     });
 }
 
-app.UseHangfireServer();
+app.UseHangfireDashboard();
 
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
 
-app.UseCors("CorsPolicy");
+//app.UseCors("CorsPolicy");
+app.UseCors("AllowSpecificOrigins");
 // Map SignalR Hub
 app.MapHub<JobStatusHub>("/jobStatusHub");
 

@@ -5,6 +5,7 @@ using Hangfire;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Caching.Memory;
+using System;
 
 namespace HandleMultipleFilesWebApi.Controllers
 {
@@ -39,11 +40,12 @@ namespace HandleMultipleFilesWebApi.Controllers
                 var jobId = Guid.NewGuid().ToString();
                 // Start the asynchronous processing here (e.g., using a background worker or task queue)
 
-                _backgroundJobClient.Enqueue(() => _processService.ProcessFilesAsync(request.FileNames, jobId));
-           
+                var hangfireJob = _backgroundJobClient.Enqueue(() => _processService.ProcessFilesAsync(request.FileNames,jobId));
+
+                Hangfire.JobStorage.Current.GetConnection().SetJobParameter(hangfireJob, "newjob", jobId);
                 //await _processService.ProcessFilesAsync(request.FileNames, jobId);
 
-                return Ok(new { JobId = jobId });
+                return Ok(new { JobId = hangfireJob });
             }
             catch (Exception ex)
             {
@@ -67,13 +69,12 @@ namespace HandleMultipleFilesWebApi.Controllers
 
             if (jobResult.Status == "Completed")
             {
-                await _hubContext.Clients.All.SendAsync("ReceiveJobStatus", jobId, new { Status = "Completed", Url = jobResult.PresignedUrl });
+                await _hubContext.Clients.All.SendAsync("ReceiveJobStatus", jobId, new { Status = "Succeeded", Url = jobResult.PresignedUrl });
                 return Ok();
             }
 
             return Ok(new { Status = jobResult.Status }); // Or any other status message
         }
-
     }
 
 }
