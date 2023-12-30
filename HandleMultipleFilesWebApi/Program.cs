@@ -52,6 +52,8 @@ builder.Services.AddCors(options =>
         });
 });
 
+builder.Services.AddSingleton<JobMonitorService>();
+
 builder.Services.AddSignalR();
 
 var minioConfig = builder.Configuration.GetSection("MinioConfig").Get<MinioConfigViewModel>();
