@@ -25,7 +25,7 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
     serverOptions.Listen(IPAddress.Any, 443, listenOptions =>
     {
         // Adjust the path and password as necessary
-        listenOptions.UseHttps("/app/data/certs/smartx.ir_2023_2.pfx", "1123");
+        listenOptions.UseHttps("/app/certs/smartx.ir_2023_2.pfx", "1123");
     });
 });
 
